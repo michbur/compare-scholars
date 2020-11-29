@@ -1,5 +1,6 @@
 library(shiny)
 library(ggplot2)
+library(dplyr)
 
 shinyServer(function(input, output) {
     
@@ -50,20 +51,33 @@ shinyServer(function(input, output) {
               select(pubs_tab, id, year, value = Freq) %>% 
                   mutate(type = "publications")) %>% 
             tidyr::complete(year, id, type, fill = list(value = 0)) %>% 
-            inner_join(unique(select(cite_dat, id, name)), by = c("id" = "id")) 
+            inner_join(unique(select(cite_dat, id, name)), by = c("id" = "id")) %>% 
+            arrange(year) %>% 
+            group_by(type, id) %>% 
+            mutate(cum_value = cumsum(value)) 
         
     })
     
+    
     output[["comp_plot"]] <- renderPlot({
-        ggplot(scholar_dat(), aes(x = year, y = value, fill = name)) +
-            geom_col(position = position_dodge(width = 0.75), width = 0.5) +
-            #geom_text(position = position_dodge(width = 0.75), color = "black", 
-            #          vjust = 1) +
+        ggplot(scholar_dat(), aes(x = year, y = cum_value, color = name)) +
+            geom_line() +
+            geom_point() +
             facet_wrap(~ type, scales = "free_y", ncol = 1) +
             scale_x_continuous(breaks = scales::pretty_breaks()) +
             scale_y_continuous(breaks= scales::pretty_breaks()) +
             theme_bw() +
             theme(legend.position = "bottom")
+    })
+    
+    output[["part_plot"]] <- renderPlot({
+        ggplot(scholar_dat(), aes(x = year, y = cum_value)) +
+            geom_line() +
+            geom_point() +
+            facet_grid(name ~ type, scales = "free_y") +
+            scale_x_continuous(breaks = scales::pretty_breaks()) +
+            scale_y_continuous(breaks= scales::pretty_breaks()) +
+            theme_bw() 
     })
     
 })

@@ -13,7 +13,8 @@ shinyUI(fluidPage(
         ),
 
         mainPanel(
-            withSpinner(plotOutput("comp_plot"))
+            withSpinner(plotOutput("comp_plot")),
+            withSpinner(plotOutput("part_plot"))
         )
     )
 ))
