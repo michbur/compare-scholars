@@ -3,7 +3,6 @@ library(ggplot2)
 library(dplyr)
 library(scholar)
 library(DT)
-library(reshape2)
 
 shinyServer(function(input, output) {
     
