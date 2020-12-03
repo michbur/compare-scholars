@@ -1,10 +1,14 @@
 library(shiny)
 library(ggplot2)
 library(dplyr)
+library(scholar)
+library(DT)
+library(reshape2)
 
 shinyServer(function(input, output) {
     
-    rv  <- reactiveValues(n_researcher = 1)
+    rv  <- reactiveValues(n_researcher = 1,
+                          scholar_ids = c())
     
     output[["selection_boxes"]] <- renderUI({
         lapply(1L:rv[["n_researcher"]], function(ith_id) {
@@ -17,13 +21,19 @@ shinyServer(function(input, output) {
         rv[["n_researcher"]] <- input[["n_researcher"]]
     })
     
-    scholar_dat <- reactive({
+    observeEvent(input[["run_btn"]], {
         raw_ids <- sapply(paste0("researcher", 1L:rv[["n_researcher"]]),
                           function(ith_researcher) {
                               input[[ith_researcher]]
                           })
         
-        ids <- raw_ids[raw_ids != "raw_ids"]
+        rv[["scholar_ids"]] <- raw_ids[raw_ids != ""]
+    })
+    
+    scholar_dat <- reactive({
+        input[["run_btn"]]
+        
+        ids <- rv[["scholar_ids"]]
         
         validate(
             need(ids, "Provide at least single Scholar ID")
@@ -54,13 +64,25 @@ shinyServer(function(input, output) {
             inner_join(unique(select(cite_dat, id, name)), by = c("id" = "id")) %>% 
             arrange(year) %>% 
             group_by(type, id) %>% 
-            mutate(cum_value = cumsum(value)) 
+            mutate(cum_value = cumsum(value)) %>% 
+            ungroup()
         
     })
     
     
     output[["comp_plot"]] <- renderPlot({
-        ggplot(scholar_dat(), aes(x = year, y = cum_value, color = name)) +
+        
+        plot_dat <- if(input[["cum_logical"]]) {
+            scholar_dat() %>% 
+                select(-value) %>% 
+                rename(value = cum_value)
+        } else {
+            scholar_dat()
+        }
+        
+        ggplot(plot_dat, aes(x = year, 
+                                  y = value,
+                                  color = name)) +
             geom_line() +
             geom_point() +
             facet_wrap(~ type, scales = "free_y", ncol = 1) +
@@ -70,14 +92,15 @@ shinyServer(function(input, output) {
             theme(legend.position = "bottom")
     })
     
-    output[["part_plot"]] <- renderPlot({
-        ggplot(scholar_dat(), aes(x = year, y = cum_value)) +
-            geom_line() +
-            geom_point() +
-            facet_grid(name ~ type, scales = "free_y") +
-            scale_x_continuous(breaks = scales::pretty_breaks()) +
-            scale_y_continuous(breaks= scales::pretty_breaks()) +
-            theme_bw() 
-    })
     
+    output[["comp_df"]] <- renderDataTable({
+        mutate(scholar_dat(), type = as.factor(type), name = as.factor(name)) %>% 
+            select(type, name, value, year) %>% 
+            datatable(colnames = c("Type", "Name", "Value", "Year"),
+                      class = "table-bordered table-condensed",
+                      extensions = "Buttons",
+                      options = list(pageLength = 10, dom = "tBip", autoWidth = TRUE, buttons = c("excel", "pdf")),
+                      filter = "top",
+                      rownames = FALSE)
+    })
 })
