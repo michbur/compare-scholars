@@ -16,12 +16,14 @@ shinyUI(fluidPage(
     ),
 
     mainPanel(
+      h2("Citations/publications per year"),
       checkboxInput("cum_logical", "Cumulative values"),
       tabsetPanel(
         tabPanel("Chart",
                  withSpinner(girafeOutput("comp_plot"))),
         tabPanel("Source data", withSpinner(dataTableOutput("comp_df")))
       ),
+      h2("Summary"),
       withSpinner(dataTableOutput("cites_per_pub_df"))
 
     )
