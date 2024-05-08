@@ -12,6 +12,8 @@ shinyUI(fluidPage(
       sliderInput("n_researcher", min = 1, max = 5, step = 1, value = 1,
                   label = "Number of researchers"),
       uiOutput("selection_boxes"),
+      sliderInput("year_range", min = 2000, max = 2024, step = 1, value = c(2019, 2024),
+                  label = "Years"),
       actionButton(inputId = "run_btn", label = "Run!")
     ),
 
