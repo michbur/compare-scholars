@@ -61,7 +61,6 @@ shinyServer(function(input, output) {
             mutate(type = "cites"),
           select(pubs_tab, id, year, value = Freq) %>%
             mutate(type = "publications")) %>%
-      filter(year >= min(input[["year_range"]]), year <= max(input[["year_range"]])) %>% 
       tidyr::complete(year, id, type, fill = list(value = 0)) %>%
       inner_join(unique(select(cite_dat, id, name)), by = c("id" = "id")) %>%
       arrange(year) %>%
